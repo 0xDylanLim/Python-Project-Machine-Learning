@@ -1,0 +1,35 @@
+import numpy as np
+import pandas as pd
+import matplotlib as plt
+import pickle
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn import metrics
+from xgboost import XGBClassifier
+from xgboost import plot_importance
+
+airline_data = pd.read_csv('Invistico_Airline.csv', error_bad_lines=False)
+
+airline_data.head(10)
+airline_data.dtypes
+
+airline_data_dummies = pd.get_dummies(airline_data, columns=['satisfaction','Customer Type','Type of Travel','Class'])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
