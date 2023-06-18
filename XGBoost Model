@@ -13,23 +13,89 @@ airline_data = pd.read_csv('Invistico_Airline.csv', error_bad_lines=False)
 airline_data.head(10)
 airline_data.dtypes
 
+#convert categorical variables to numerical
 airline_data_dummies = pd.get_dummies(airline_data, columns=['satisfaction','Customer Type','Type of Travel','Class'])
 
+y = airline_data_dummies['satisfaction_satisfied']
+X = airline_data_dummies.drop(['satisfaction_satisfied','satisfaction_dissatisfied'], axis = 1)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
+
+#MODEL BUILDING
+#instantiate xgbclassifier
+xgb = XGBClassifier(random_state = 0)
+#define parameters for hyperparameter testing
+cv_params = {'max_depth': [4, 6],
+              'min_child_weight': [3, 5],
+              'learning_rate': [0.1, 0.2, 0.3],
+              'n_estimators': [5,10,15],
+              'subsample': [0.7],
+              'colsample_bytree': [0.7]
+              }
+
+scoring = {'accuracy', 'precision', 'recall', 'f1'}
+
+#use gridsearch cross validation
+xgb_cv = GridSearchCV(xgb, cv_params, scoring = scoring, cv = 5, refit = 'f1')
+
+#fit gridsearch model to training data
+xgb_cv = xgb_cv.fit(X_train, y_train)
+xgb_cv
+
+pickle.dump(xgb_cv, open('xgb_cv.sav', 'wb'))
 
 
+#RESULTS AND EVALUATION
+y_pred = xgb_cv.predict(X_test)
+
+ac_score = metrics.accuracy_score(y_test, y_pred)
+print('accuracy score:', ac_score)
+
+pc_score = metrics.precision_score(y_test, y_pred)
+print('precision score:', pc_score)
+
+rc_score = metrics.recall_score(y_test, y_pred)
+print('recall score:', rc_score)
+
+f1_score = metrics.f1_score(y_test, y_pred)
+print('f1 score:', f1_score)
+
+#CONFUSION MATRIX
+cm = metrics.confusion_matrix(y_test, y_pred)
+disp = metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=xgb_cv.classes_)
+disp.plot()
+
+#VISUALISE MOST IMPORTANT FEATURES
+plot_importance(xgb_cv.best_estimator_)
 
 
+#COMPARE MODELS
+table = pd.DataFrame()
+table = table.append({'Model': "Tuned Decision Tree",
+                        'F1':  0.945422,
+                        'Recall': 0.935863,
+                        'Precision': 0.955197,
+                        'Accuracy': 0.940864
+                      },
+                        ignore_index=True
+                    )
 
+table = table.append({'Model': "Tuned Random Forest",
+                        'F1':  0.947306,
+                        'Recall': 0.944501,
+                        'Precision': 0.950128,
+                        'Accuracy': 0.942450
+                      },
+                        ignore_index=True
+                    )
 
+table = table.append({'Model': "Tuned XGBoost",
+                        'F1':  f1_score,
+                        'Recall': rc_score,
+                        'Precision': pc_score,
+                        'Accuracy': ac_score
+                      },
+                        ignore_index=True
+                    )
 
-
-
-
-
-
-
-
-
-
-
-
+table
